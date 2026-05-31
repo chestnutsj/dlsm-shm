@@ -2,7 +2,6 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used, missing_docs)]
 
-use dlsm_core::DlsmError;
 use dlsm_shm::ArenaError;
 
 #[test]

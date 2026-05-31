@@ -1,0 +1,27 @@
+/target/
+**/target/
+**/*.rs.bk
+*.swp
+*.swo
+.DS_Store
+
+# Criterion output
+**/criterion/
+
+# proptest regressions are intentionally TRACKED, not ignored:
+# !proptest-regressions/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+.claude/
+.codex/
+# Local environment
+.env
+.env.local
+
+# 设计过程/对比文档仅本地保留作历史，不进 git；
+# git 只跟踪 docs/ 下的最终版实现方案与说明。
+/docs/superpowers/

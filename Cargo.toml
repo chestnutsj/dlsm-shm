@@ -1,27 +1,39 @@
+[workspace]
+
 [package]
 name = "dlsm-shm"
-description = "共享内存 Arena 分配器（mmap MAP_SHARED + 原子 bump）"
-version.workspace = true
-edition.workspace = true
-rust-version.workspace = true
-license.workspace = true
-authors.workspace = true
-repository.workspace = true
+description = "Arena"
+version = "0.0.1"
+edition = "2021"
+rust-version = "1.75"
+license = "GPL 3.0"
+authors = ["DLSM Authors"]
+repository = "https://github.com/chestnutsj/dlsm-shm"
 
-[lints]
-workspace = true
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+unused_must_use = "deny"
+missing_debug_implementations = "warn"
+missing_docs = "warn"
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(loom)'] }
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+todo = "deny"
+dbg_macro = "deny"
+unimplemented = "deny"
+unwrap_used = "warn"
+expect_used = "warn"
 
 [dependencies]
-dlsm-core.workspace = true
-libc.workspace = true
-thiserror.workspace = true
-tracing.workspace = true
+libc = "0.2"
+thiserror = "1.0"
 
 [dev-dependencies]
-dlsm-testutils.workspace = true
-libc.workspace = true
-pretty_assertions.workspace = true
-proptest.workspace = true
+libc = "0.2"
 
-[target.'cfg(loom)'.dev-dependencies]
-loom.workspace = true
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1

@@ -1,54 +1,88 @@
 //! Arena 操作错误类型。
 //!
-//! 错误码区段 `10000..=19999`（见 [`dlsm_core::error`]）。消息一律英文。
+//! 错误码区段 `10000..=19999`（本 crate 自带，独立于其它 crate）。消息一律英文。
 
-dlsm_core::dlsm_error! {
-    /// Arena 创建或分配过程中的错误。
-    pub enum ArenaError {
-        /// `mmap` 系统调用失败。
-        10001 Mmap(#[source] std::io::Error) => "mmap failed: {0}",
+use thiserror::Error;
 
-        /// `munmap` 系统调用失败（仅在 drop 路径上被记录，不向用户返回）。
-        10002 Munmap(#[source] std::io::Error) => "munmap failed: {0}",
+/// Arena 创建或分配过程中的错误。
+#[derive(Debug, Error)]
+pub enum ArenaError {
+    /// `mmap` 系统调用失败。
+    #[error("mmap failed: {0}")]
+    Mmap(#[source] std::io::Error),
 
-        /// 请求大小为 0，无意义。
-        10003 ZeroSize => "arena size must be non-zero",
+    /// `munmap` 系统调用失败（仅在 drop 路径上被记录，不向用户返回）。
+    #[error("munmap failed: {0}")]
+    Munmap(#[source] std::io::Error),
 
-        /// 当前剩余容量不足以满足分配（包含 padding）。
-        10004 OutOfMemory {
-            /// 实际需要消耗的字节数（含对齐 padding）。
-            requested: usize,
-            /// 当前剩余可分配字节数。
-            available: usize,
-        } => "out of memory: requested {requested} bytes, available {available}",
+    /// 请求大小为 0，无意义。
+    #[error("arena size must be non-zero")]
+    ZeroSize,
 
-        /// `shm_open` 系统调用失败（非"已存在"/"不存在"的其它错误）。
-        10005 ShmOpen(#[source] std::io::Error) => "shm_open failed: {0}",
+    /// 当前剩余容量不足以满足分配（包含 padding）。
+    #[error("out of memory: requested {requested} bytes, available {available}")]
+    OutOfMemory {
+        /// 实际需要消耗的字节数（含对齐 padding）。
+        requested: usize,
+        /// 当前剩余可分配字节数。
+        available: usize,
+    },
 
-        /// `ftruncate` 系统调用失败。
-        10006 Ftruncate(#[source] std::io::Error) => "ftruncate failed: {0}",
+    /// `shm_open` 系统调用失败（非"已存在"/"不存在"的其它错误）。
+    #[error("shm_open failed: {0}")]
+    ShmOpen(#[source] std::io::Error),
 
-        /// 创建命名段时名字已存在（`O_EXCL`）。
-        10007 AlreadyExists => "named segment already exists",
+    /// `ftruncate` 系统调用失败。
+    #[error("ftruncate failed: {0}")]
+    Ftruncate(#[source] std::io::Error),
 
-        /// attach 命名段时名字不存在。
-        10008 NotFound => "named segment not found",
+    /// 创建命名段时名字已存在（`O_EXCL`）。
+    #[error("named segment already exists")]
+    AlreadyExists,
 
-        /// 命名段名字非法（含 NUL，或无法转为 C 字符串）。
-        10009 InvalidName => "invalid shm name",
+    /// attach 命名段时名字不存在。
+    #[error("named segment not found")]
+    NotFound,
 
-        /// 段头 magic 不匹配——不是 DLSM 段或已损坏。
-        10010 BadMagic => "bad shm header magic (not a DLSM segment or corrupted)",
+    /// 命名段名字非法（含 NUL，或无法转为 C 字符串）。
+    #[error("invalid shm name")]
+    InvalidName,
 
-        /// 段头版本与本二进制不一致。
-        10011 VersionMismatch {
-            /// 段内记录的版本。
-            segment: u32,
-            /// 本二进制期望的版本。
-            expected: u32,
-        } => "shm header version mismatch: segment={segment}, expected={expected}",
+    /// 段头 magic 不匹配——不是 DLSM 段或已损坏。
+    #[error("bad shm header magic (not a DLSM segment or corrupted)")]
+    BadMagic,
 
-        /// 固定基址 attach 时目标基址在本进程地址空间已被占用。
-        10012 BaseAddrUnavailable => "fixed base address is occupied in this process",
+    /// 段头版本与本二进制不一致。
+    #[error("shm header version mismatch: segment={segment}, expected={expected}")]
+    VersionMismatch {
+        /// 段内记录的版本。
+        segment: u32,
+        /// 本二进制期望的版本。
+        expected: u32,
+    },
+
+    /// 固定基址 attach 时目标基址在本进程地址空间已被占用。
+    #[error("fixed base address is occupied in this process")]
+    BaseAddrUnavailable,
+}
+
+impl ArenaError {
+    /// 稳定数字错误码（区段 `10000..=19999`）：日志前缀 / 未来 `MySQL` errno 映射。
+    #[must_use]
+    pub fn code(&self) -> u32 {
+        match self {
+            Self::Mmap(_) => 10001,
+            Self::Munmap(_) => 10002,
+            Self::ZeroSize => 10003,
+            Self::OutOfMemory { .. } => 10004,
+            Self::ShmOpen(_) => 10005,
+            Self::Ftruncate(_) => 10006,
+            Self::AlreadyExists => 10007,
+            Self::NotFound => 10008,
+            Self::InvalidName => 10009,
+            Self::BadMagic => 10010,
+            Self::VersionMismatch { .. } => 10011,
+            Self::BaseAddrUnavailable => 10012,
+        }
     }
 }
